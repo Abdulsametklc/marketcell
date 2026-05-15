@@ -1,6 +1,7 @@
 # MarketCell — Turkcell Dijital Pazar Yeri
 
 Turkcell abonelerinin Paycell ile ödeme yaparak dijital ve fiziksel ürün alıp satabildiği **çok satıcılı (multi-vendor)** pazar yeri platformu.
+**Bu proje Turkcell Geleceği Yazanlar CodeNight Erzurum Yarışması'nda 2. olmuştur.**
 
 > **Turkcell CodeNight 2026** hackathon projesi — 10 saat içinde geliştirildi.
 
