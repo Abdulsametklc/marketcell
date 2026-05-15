@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart } from '../api/cart';
-import { getAddresses, createAddress, createOrder } from '../api/orders';
+import { getAddresses, createAddress, createOrder, validateCoupon } from '../api/orders';
 import { useCartStore } from '../store/cartStore';
 
 const MOCK_ADDRESSES = [
@@ -36,6 +36,9 @@ export default function Checkout() {
   const [cart, setCart] = useState(null);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [cardNumber, setCardNumber] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponInfo, setCouponInfo] = useState(null);
+  const [couponError, setCouponError] = useState('');
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState('');
@@ -94,7 +97,7 @@ export default function Checkout() {
 
     setPlacing(true);
     try {
-      const { data } = await createOrder(selectedAddress, cardNumber);
+      const { data } = await createOrder(selectedAddress, cardNumber, couponInfo ? couponCode : '');
       setItemCount(0);
       navigate(`/order-success/${data.id}`);
     } catch (err) {
@@ -117,6 +120,24 @@ export default function Checkout() {
   const getTotal = () => {
     if (!cart?.items) return 0;
     return cart.items.reduce((sum, item) => sum + getItemPrice(item), 0);
+  };
+
+  const handleValidateCoupon = async () => {
+    setCouponError('');
+    setCouponInfo(null);
+    if (!couponCode) return;
+    try {
+      const { data } = await validateCoupon(couponCode.toUpperCase());
+      setCouponInfo(data);
+    } catch (err) {
+      setCouponError(err.response?.data?.detail || 'Geçersiz kupon');
+    }
+  };
+
+  const getDiscount = () => {
+    if (!couponInfo || !cart?.total) return 0;
+    if (couponInfo.discount_type === 'FIXED') return parseFloat(couponInfo.discount_value);
+    return (getTotal() * parseFloat(couponInfo.discount_value)) / 100;
   };
 
   const cardHint = () => {
@@ -248,6 +269,36 @@ export default function Checkout() {
             )}
           </div>
 
+          {/* Kupon kodu */}
+          <div className="border border-gray-200 rounded-xl p-5">
+            <h2 className="font-medium text-gray-900 mb-3">İndirim Kodu</h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="TURKCELL10"
+                value={couponCode}
+                onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponInfo(null); setCouponError(''); }}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleValidateCoupon}
+                className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-900"
+              >
+                Uygula
+              </button>
+            </div>
+            {couponInfo && (
+              <p className="text-green-600 text-sm mt-2">
+                ✓ {couponInfo.discount_type === 'PERCENTAGE'
+                  ? `%${couponInfo.discount_value} indirim uygulandı`
+                  : `₺${couponInfo.discount_value} indirim uygulandı`}
+              </p>
+            )}
+            {couponError && <p className="text-red-500 text-sm mt-2">{couponError}</p>}
+            <p className="text-xs text-gray-400 mt-2">Test kodları: TURKCELL10, MARKETCELL500</p>
+          </div>
+
           {/* Paycell kart */}
           <div className="border border-gray-200 rounded-xl p-5">
             <h2 className="font-medium text-gray-900 mb-1">Paycell ile Ödeme</h2>
@@ -302,13 +353,19 @@ export default function Checkout() {
                 <span>Ara Toplam</span>
                 <span>₺{getTotal().toLocaleString('tr-TR')}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-500 mb-2">
+              <div className="flex justify-between text-sm text-gray-500 mb-1">
                 <span>Kargo</span>
                 <span className="text-green-600">Ücretsiz</span>
               </div>
+              {couponInfo && (
+                <div className="flex justify-between text-sm text-green-600 mb-1">
+                  <span>İndirim</span>
+                  <span>-₺{getDiscount().toLocaleString('tr-TR')}</span>
+                </div>
+              )}
               <div className="flex justify-between font-semibold text-base">
                 <span>Toplam</span>
-                <span className="text-purple-700">₺{getTotal().toLocaleString('tr-TR')}</span>
+                <span className="text-purple-700">₺{Math.max(0, getTotal() - getDiscount()).toLocaleString('tr-TR')}</span>
               </div>
             </div>
 

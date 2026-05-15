@@ -3,6 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 from apps.users.models import User
 from apps.products.models import Category, Store, Product, ProductVariant
+from apps.orders.models import Coupon
 
 
 class Command(BaseCommand):
@@ -102,4 +103,14 @@ class Command(BaseCommand):
             ProductVariant.objects.create(product=p, variant_type='color', value='Siyah', price_diff=0, stock=20)
             ProductVariant.objects.create(product=p, variant_type='color', value='Beyaz', price_diff=0, stock=20)
 
-        self.stdout.write(self.style.SUCCESS('Seed tamamlandi: 3 magaza, 5 kategori, 30 urun olusturuldu'))
+        # Kuponlar
+        expires = timezone.now() + timedelta(days=365)
+        Coupon.objects.get_or_create(code='TURKCELL10', defaults={
+            'discount_type': 'PERCENTAGE', 'discount_value': 10,
+            'min_order_amount': 500, 'max_uses': 1000, 'expires_at': expires, 'is_active': True,
+        })
+        Coupon.objects.get_or_create(code='MARKETCELL500', defaults={
+            'discount_type': 'FIXED', 'discount_value': 500,
+            'min_order_amount': 2000, 'max_uses': 500, 'expires_at': expires, 'is_active': True,
+        })
+        self.stdout.write(self.style.SUCCESS('Seed tamamlandi: 3 magaza, 5 kategori, 30 urun, 2 kupon olusturuldu'))

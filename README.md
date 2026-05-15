@@ -1,8 +1,92 @@
 # MarketCell — Turkcell Dijital Pazar Yeri
 
-Turkcell abonelerinin Paycell ile ödeme yaparak dijital ve fiziksel ürün alıp satabildiği çok satıcılı (multi-vendor) pazar yeri platformu.
+Turkcell abonelerinin Paycell ile ödeme yaparak dijital ve fiziksel ürün alıp satabildiği **çok satıcılı (multi-vendor)** pazar yeri platformu.
 
-> **Turkcell CodeNight 2026** hackathon projesi.
+> **Turkcell CodeNight 2026** hackathon projesi — 10 saat içinde geliştirildi.
+
+---
+
+## Ekran Görüntüleri
+
+### Giriş & Kayıt
+
+| Giriş Yap | Kayıt Ol |
+|-----------|----------|
+| ![](<sc/Ekran görüntüsü 2026-05-15 034041.png>) | ![](<sc/Ekran görüntüsü 2026-05-15 034048.png>) |
+
+> Turkcell GSM numarası ile giriş → OTP kodu ekranda otomatik gösterilir → Doğrula.
+
+---
+
+### Ürün Kataloğu & Arama
+
+**Ürün listesi — kategori filtresi, fiyat aralığı, sıralama:**
+
+![](<sc/Ekran görüntüsü 2026-05-15 033547.png>)
+
+**Metin arama — "sweatshirt" ile anlık arama:**
+
+![](<sc/Ekran görüntüsü 2026-05-15 033613.png>)
+
+---
+
+### Ürün Detay & Sepete Ekleme
+
+| Varyant Seçimi | Sepete Ekle |
+|----------------|-------------|
+| ![](<sc/Ekran görüntüsü 2026-05-15 033728.png>) | ![](<sc/Ekran görüntüsü 2026-05-15 033737.png>) |
+
+> Beden (S/M/L/XL) veya renk seçimi, stok kontrolü, fiyat farkı gösterimi.
+
+---
+
+### Sepet
+
+![](<sc/Ekran görüntüsü 2026-05-15 033750.png>)
+
+> Ürünler satıcı bazında gruplandırılır. Adet güncelleme, kaldırma, toplam fiyat.
+
+---
+
+### Ödeme (Paycell Simülasyonu)
+
+![](<sc/Ekran görüntüsü 2026-05-15 033806.png>)
+
+> Teslimat adresi seçimi + Paycell kart girişi. `4242...` başarılı, `4000...` başarısız.
+
+---
+
+### Sipariş Onayı — Çok Satıcılı Bölünme
+
+![](<sc/Ekran görüntüsü 2026-05-15 033818.png>)
+
+> Sipariş satıcı bazlı alt siparişlere otomatik bölünür. Her satıcı kendi kargosunu yönetir.
+
+---
+
+### Sipariş Geçmişi
+
+![](<sc/Ekran görüntüsü 2026-05-15 033833.png>)
+
+> Tüm siparişler satıcı bazlı durum etiketleriyle listelenir: Ödendi / Hazırlanıyor / Kargoda / Teslim Edildi.
+
+---
+
+### Satıcı Paneli
+
+![](<sc/Ekran görüntüsü 2026-05-15 033915.png>)
+
+> Günlük/haftalık satış istatistikleri, sipariş listesi ve durum güncelleme (Ödendi → Hazırlanıyor → Kargoda).
+
+---
+
+### Admin Paneli
+
+| Dashboard | Satıcı Yönetimi | Kategori Yönetimi |
+|-----------|----------------|-------------------|
+| ![](<sc/Ekran görüntüsü 2026-05-15 033959.png>) | ![](<sc/Ekran görüntüsü 2026-05-15 034009.png>) | ![](<sc/Ekran görüntüsü 2026-05-15 034021.png>) |
+
+> Platform geneli istatistikler, satıcı onay/ret işlemleri, kategori ekleme/silme.
 
 ---
 
@@ -24,8 +108,8 @@ Turkcell abonelerinin Paycell ile ödeme yaparak dijital ve fiziksel ürün alı
 **Tek komut ile tüm sistemi başlat:**
 
 ```bash
-git clone <repo-url>
-cd marketcell-demo
+git clone https://github.com/nisacetinel06/marketcell.git
+cd marketcell
 docker compose up
 ```
 
@@ -35,7 +119,7 @@ docker compose up
 | Backend API | http://localhost:8000/api/v1/ |
 | Swagger Docs | http://localhost:8000/api/docs/ |
 
-> `docker compose up` komutu otomatik olarak migrate ve seed işlemlerini yapar. 30 ürün, 3 mağaza, 5 kategori hazır gelir.
+> `docker compose up` otomatik olarak migrate ve seed yapar. 30 ürün, 3 mağaza, 5 kategori hazır gelir.
 
 ---
 
@@ -44,68 +128,64 @@ docker compose up
 | Rol | Telefon | Açıklama |
 |-----|---------|----------|
 | Admin | `5550000000` | Platform yöneticisi |
-| Satıcı | `5551111111` | TechStore (Telefon & Laptop) |
-| Satıcı | `5552222222` | ModaHaus (Giyim) |
-| Satıcı | `5553333333` | GadgetHub (Aksesuar) |
+| Satıcı | `5551111111` | TechStore — Telefon & Laptop |
+| Satıcı | `5552222222` | ModaHaus — Giyim |
+| Satıcı | `5553333333` | GadgetHub — Aksesuar |
 | Alıcı | Herhangi numara | Yeni hesap oluşturulur |
-
-**Giriş akışı:** Telefon numarası gir → OTP kodu ekranda otomatik çıkar → Doğrula.
 
 **Paycell test kartları:**
 - `4242 4242 4242 4242` → Ödeme başarılı
 - `4000 0000 0000 0000` → Ödeme reddedildi
 
+**Kupon kodları:**
+- `TURKCELL10` → %10 indirim (min. ₺500)
+- `MARKETCELL500` → ₺500 sabit indirim (min. ₺2000)
+
 ---
 
 ## Özellikler
 
-### Alıcı
-- GSM + OTP ile kayıt/giriş (JWT)
-- Ürün arama, kategori ve fiyat filtresi, sıralama
-- Sayfalama (20 ürün/sayfa)
-- Ürün detay: galeri, varyant seçimi (renk/beden), stok gösterimi
-- Sepet yönetimi: ekleme, adet güncelleme, çıkarma
-- Checkout: adres seçimi, Paycell ödeme simülasyonu
-- Sipariş geçmişi ve detay görüntüleme
+### Zorunlu Özellikler
+- GSM + OTP ile kayıt/giriş (JWT + Refresh Token)
+- Rol bazlı erişim: Alıcı, Satıcı, Admin
+- Ürün kataloğu: metin arama, kategori (hiyerarşik), fiyat filtresi, sıralama, sayfalama
+- Ürün detay: galeri, beden/renk varyantı, stok gösterimi
+- Sepet yönetimi: ekleme, adet güncelleme, satıcı bazlı gruplama
+- **Çok satıcılı sipariş bölünmesi:** tek sipariş → satıcı bazlı SubOrder'lara ayrılır
+- **Atomik stok düşümü:** `select_for_update()` + `transaction.atomic` (race condition koruması)
+- Paycell ödeme simülasyonu
+- Sipariş state machine: `PAID → PREPARING → SHIPPED → DELIVERED`
+- Satıcı paneli: sipariş yönetimi, durum güncelleme, günlük/haftalık istatistikler
+- Admin paneli: platform istatistikleri, satıcı onayı, kategori yönetimi
 - Adres yönetimi
 
-### Satıcı
-- Satıcıya gelen siparişleri listeleme (mağaza bazlı izole)
-- Sipariş durum güncelleme: `PAID → PREPARING → SHIPPED`
-- Günlük / haftalık satış istatistikleri
-
-### Admin
-- Platform istatistikleri (kullanıcı, ürün, sipariş, gelir)
-- Satıcı onaylama / onay kaldırma
-- Kategori yönetimi (ekleme, silme)
-
-### Teknik
-- **Çok satıcılı sipariş bölünmesi:** Bir sepette farklı satıcılardan ürün varsa sipariş otomatik satıcı bazlı alt siparişlere bölünür
-- **Atomik stok düşümü:** `select_for_update()` + `transaction.atomic` ile race condition koruması
-- **Sipariş state machine:** PAID → PREPARING → SHIPPED → DELIVERED / CANCELLED
-- **JWT Refresh Token:** Token süresi dolunca otomatik yenileme
+### Bonus Özellikler
+- Ürün değerlendirme ve yorum (1-5 yıldız + metin)
+- Favorilere ekleme (Wishlist)
+- Satıcı puanı (ortalama ürün puanı, sipariş tamamlama oranı)
+- Kupon/indirim kodu sistemi (sabit tutar veya yüzde)
+- Uygulama içi sipariş bildirimleri (navbar zili, 30sn polling)
 
 ---
 
 ## Proje Yapısı
 
 ```
-marketcell-demo/
+marketcell/
 ├── docker-compose.yml
 ├── marketcell-database/          # Django Backend
 │   ├── apps/
-│   │   ├── users/               # Auth, OTP, Adres
-│   │   ├── products/            # Ürün, Kategori, Mağaza
-│   │   └── orders/              # Sepet, Sipariş, SubOrder
+│   │   ├── users/               # Auth, OTP, JWT, Adres
+│   │   ├── products/            # Ürün, Kategori, Mağaza, Yorum, Wishlist
+│   │   └── orders/              # Sepet, Sipariş, SubOrder, Kupon, Bildirim
 │   ├── config/
-│   │   ├── settings.py
-│   │   └── urls.py
 │   └── manage.py
 └── marketcell-frontend/
     └── marketcell-frontend/      # React Frontend
         └── src/
             ├── pages/
             ├── api/
+            ├── components/
             └── store/
 ```
 
@@ -116,120 +196,65 @@ marketcell-demo/
 Swagger UI: **http://localhost:8000/api/docs/**
 
 ### Auth
-
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
-| POST | `/api/v1/auth/register/` | GSM ile kayıt + OTP gönder |
-| POST | `/api/v1/auth/verify-otp/` | OTP doğrulama, JWT döner |
-| POST | `/api/v1/auth/token/refresh/` | Access token yenile |
-| GET | `/api/v1/auth/addresses/` | Adreslerimi listele |
-| POST | `/api/v1/auth/addresses/` | Yeni adres ekle |
-| PATCH | `/api/v1/auth/addresses/<id>/` | Adres güncelle |
-| DELETE | `/api/v1/auth/addresses/<id>/` | Adres sil |
+| POST | `/api/v1/auth/register/` | GSM ile kayıt + OTP |
+| POST | `/api/v1/auth/verify-otp/` | OTP doğrula, JWT döner |
+| POST | `/api/v1/auth/token/refresh/` | Token yenile |
+| GET/POST | `/api/v1/auth/addresses/` | Adres listele / ekle |
 
-### Ürünler & Kategoriler
-
+### Ürünler
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
-| GET | `/api/v1/products/` | Ürün listesi (filtreli, sayfalı) |
-| GET | `/api/v1/products/?q=iphone` | Metin arama |
-| GET | `/api/v1/products/?cat=<uuid>` | Kategori filtresi |
-| GET | `/api/v1/products/?min=1000&max=5000` | Fiyat aralığı |
-| GET | `/api/v1/products/?sort=price_asc` | Sıralama |
-| GET | `/api/v1/products/<id>/` | Ürün detay (varyantlar dahil) |
+| GET | `/api/v1/products/?q=&cat=&min=&max=&sort=` | Arama + filtreleme |
+| GET | `/api/v1/products/<id>/` | Ürün detay |
 | GET | `/api/v1/categories/` | Kategori ağacı |
+| GET/POST | `/api/v1/products/<id>/reviews/` | Yorumlar |
+| GET/POST | `/api/v1/wishlist/<id>/` | Favori toggle |
 
 ### Sepet & Sipariş
-
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
 | GET | `/api/v1/cart/` | Sepetim |
-| POST | `/api/v1/cart/items/` | Sepete ekle `{variant_id, quantity}` |
-| PATCH | `/api/v1/cart/items/<id>/` | Adet güncelle `{quantity}` |
-| DELETE | `/api/v1/cart/items/<id>/` | Sepetten çıkar |
-| POST | `/api/v1/orders/` | Sipariş oluştur (Paycell ödeme) |
+| POST | `/api/v1/cart/items/` | Sepete ekle |
+| POST | `/api/v1/orders/` | Sipariş oluştur (Paycell) |
 | GET | `/api/v1/orders/` | Siparişlerim |
-| GET | `/api/v1/orders/<id>/` | Sipariş detay |
+| POST | `/api/v1/coupons/validate/` | Kupon doğrula |
+| GET | `/api/v1/notifications/` | Bildirimler |
 
-### Satıcı Paneli
-
+### Satıcı & Admin
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
-| GET | `/api/v1/seller/orders/` | Satıcıya gelen siparişler |
-| PATCH | `/api/v1/seller/orders/<id>/status/` | Sipariş durumu güncelle `{status}` |
-| GET | `/api/v1/seller/stats/` | Günlük/haftalık istatistikler |
-
-### Admin
-
-| Method | Endpoint | Açıklama |
-|--------|----------|----------|
+| GET | `/api/v1/seller/orders/` | Satıcı siparişleri |
+| PATCH | `/api/v1/seller/orders/<id>/status/` | Durum güncelle |
+| GET | `/api/v1/seller/stats/` | Satış istatistikleri |
 | GET | `/api/v1/admin/stats/` | Platform istatistikleri |
-| GET | `/api/v1/admin/sellers/` | Tüm satıcılar |
-| PATCH | `/api/v1/admin/stores/<id>/` | Mağaza onayla/reddet |
-
----
-
-## Örnek API İstekleri
-
-**Kayıt:**
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/register/ \
-  -H "Content-Type: application/json" \
-  -d '{"gsm_number": "5551234567", "name": "Ali Veli"}'
-```
-
-**OTP Doğrulama:**
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/verify-otp/ \
-  -H "Content-Type: application/json" \
-  -d '{"gsm_number": "5551234567", "otp_code": "123456"}'
-```
-
-**Ürün Arama:**
-```bash
-curl "http://localhost:8000/api/v1/products/?q=iphone&sort=price_asc"
-```
-
-**Sipariş Oluşturma:**
-```bash
-curl -X POST http://localhost:8000/api/v1/orders/ \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"address_id": "<uuid>", "card_number": "4242424242424242"}'
-```
+| GET | `/api/v1/admin/sellers/` | Satıcı listesi |
 
 ---
 
 ## Mimari
 
 ```
-Browser
-  │
+Browser (React SPA)
+  │  axios + JWT interceptor (auto-refresh)
   ▼
-React SPA (port 5173)
-  │  axios + JWT interceptor
-  ▼
-Django REST API (port 8000)
-  │
+Django REST API
   ├── apps/users    → Auth, OTP, JWT
-  ├── apps/products → Ürün, Kategori, Mağaza
-  └── apps/orders   → Sepet, Sipariş, SubOrder
+  ├── apps/products → Ürün, Kategori, Mağaza, Yorum, Wishlist
+  └── apps/orders   → Sepet, Sipariş, SubOrder, Kupon, Bildirim
         │
-        │  @transaction.atomic
-        │  select_for_update()
+        │  @transaction.atomic + select_for_update()
         ▼
-PostgreSQL (port 5432)
+PostgreSQL 15 (Docker)
 ```
 
 **Çok satıcılı sipariş bölünmesi:**
 ```
-Sepet [iPhone (TechStore) + Gömlek (ModaHaus)]
-  │
-  ▼ POST /api/v1/orders/
-  │
-  ├── Order (ana sipariş, toplam tutar, ödeme)
-  │     ├── SubOrder → TechStore (iPhone)
-  │     └── SubOrder → ModaHaus (Gömlek)
-  │
-  └── Stok atomik düşümü (select_for_update)
+Sepet: [iPhone → TechStore] + [Sweatshirt → ModaHaus] + [AirPods → GadgetHub]
+         ↓
+Order (ana sipariş, toplam tutar, ödeme)
+  ├── SubOrder #1 → TechStore   (atomik stok düşümü)
+  ├── SubOrder #2 → ModaHaus    (atomik stok düşümü)
+  └── SubOrder #3 → GadgetHub   (atomik stok düşümü)
 ```

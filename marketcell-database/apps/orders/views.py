@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import Sum, Count
 from django.utils import timezone
 from datetime import timedelta
-from .models import Cart, CartItem, Order, SubOrder, OrderItem, Coupon
+from .models import Cart, CartItem, Order, SubOrder, OrderItem, Coupon, Notification
 from .serializers import (
     CartSerializer, CartItemSerializer, OrderSerializer,
     CreateOrderSerializer, SubOrderSerializer
@@ -226,6 +226,14 @@ class SellerOrderListView(APIView):
             return Response({'detail': 'User is not a seller'}, status=status.HTTP_403_FORBIDDEN)
 
 
+STATUS_LABELS = {
+    'PAID':      'Ödendi',
+    'PREPARING': 'Hazırlanıyor',
+    'SHIPPED':   'Kargoya Verildi',
+    'DELIVERED': 'Teslim Edildi',
+    'CANCELLED': 'İptal Edildi',
+}
+
 class SellerOrderStatusView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -238,6 +246,14 @@ class SellerOrderStatusView(APIView):
             if status_value:
                 sub_order.status = status_value
                 sub_order.save()
+
+                # Alıcıya bildirim gönder
+                label = STATUS_LABELS.get(status_value, status_value)
+                Notification.objects.create(
+                    user=sub_order.order.buyer,
+                    message=f'{store.name} siparişinizi güncelledi: {label}',
+                    order_id=sub_order.order.id,
+                )
 
             serializer = SubOrderSerializer(sub_order)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -326,3 +342,48 @@ class AdminStoreApproveView(APIView):
         store.is_approved = request.data.get('is_approved', store.is_approved)
         store.save()
         return Response({'id': str(store.id), 'is_approved': store.is_approved})
+
+
+class CouponValidateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        code = request.data.get('code', '').strip().upper()
+        try:
+            coupon = Coupon.objects.get(code=code, is_active=True)
+            if coupon.used_count >= coupon.max_uses:
+                return Response({'detail': 'Kupon kullanım limiti doldu.'}, status=status.HTTP_400_BAD_REQUEST)
+            if timezone.now() > coupon.expires_at:
+                return Response({'detail': 'Kupon süresi dolmuş.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'code':           coupon.code,
+                'discount_type':  coupon.discount_type,
+                'discount_value': str(coupon.discount_value),
+                'min_order_amount': str(coupon.min_order_amount),
+            })
+        except Coupon.DoesNotExist:
+            return Response({'detail': 'Geçersiz kupon kodu.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifs = Notification.objects.filter(user=request.user)[:20]
+        data = [{
+            'id':         str(n.id),
+            'message':    n.message,
+            'order_id':   str(n.order_id) if n.order_id else None,
+            'is_read':    n.is_read,
+            'created_at': n.created_at.isoformat(),
+        } for n in notifs]
+        unread = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({'notifications': data, 'unread_count': unread})
+
+
+class NotificationMarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'detail': 'Tüm bildirimler okundu olarak işaretlendi.'})

@@ -96,3 +96,16 @@ class OrderItem(models.Model):
 
     class Meta:
         db_table = 'order_items'
+
+
+class Notification(models.Model):
+    id         = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message    = models.CharField(max_length=300)
+    order_id   = models.UUIDField(null=True, blank=True)
+    is_read    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notifications'
+        ordering = ['-created_at']

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct } from '../api/products';
+import { getProduct, getReviews, createReview, toggleWishlist, checkWishlist } from '../api/products';
 import { addToCart } from '../api/cart';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
@@ -35,9 +35,17 @@ export default function ProductDetail() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [wishlisted, setWishlisted] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     fetchProduct();
+    fetchReviews();
+    if (isLoggedIn) fetchWishlistStatus();
   }, [id]);
 
   const fetchProduct = async () => {
@@ -49,6 +57,45 @@ export default function ProductDetail() {
       setProduct(MOCK_PRODUCT);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const { data } = await getReviews(id);
+      setReviews(data.reviews || []);
+      setAvgRating(data.avg_rating);
+    } catch {}
+  };
+
+  const fetchWishlistStatus = async () => {
+    try {
+      const { data } = await checkWishlist(id);
+      setWishlisted(data.wishlisted);
+    } catch {}
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!isLoggedIn) return navigate('/login');
+    try {
+      const { data } = await toggleWishlist(id);
+      setWishlisted(data.wishlisted);
+    } catch {}
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!isLoggedIn) return navigate('/login');
+    setSubmittingReview(true);
+    setReviewError('');
+    try {
+      const { data } = await createReview(id, reviewForm);
+      setReviews(prev => [data, ...prev]);
+      setReviewForm({ rating: 5, comment: '' });
+    } catch (err) {
+      setReviewError(err.response?.data?.detail || 'Yorum gönderilemedi');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -145,10 +192,24 @@ export default function ProductDetail() {
 
         {/* Sağ — bilgiler */}
         <div className="flex-1">
-          <p className="text-sm text-gray-400 mb-1">{product.store?.name}</p>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">{product.name}</h1>
+          <div className="flex items-start justify-between mb-1">
+            <p className="text-sm text-gray-400">{product.store?.name}</p>
+            <button
+              onClick={handleToggleWishlist}
+              title={wishlisted ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+              className={`text-2xl transition-colors ${wishlisted ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}
+            >
+              {wishlisted ? '♥' : '♡'}
+            </button>
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">{product.name}</h1>
+          {avgRating && (
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-yellow-500">{'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}</span>
+              <span className="text-sm text-gray-500">{avgRating} ({reviews.length} yorum)</span>
+            </div>
+          )}
           <p className="text-3xl font-bold text-purple-700 mb-4">₺{getPrice()}</p>
-
           <p className="text-sm text-gray-600 leading-relaxed mb-6">{product.description}</p>
 
           {/* Renk varyantları */}
@@ -254,6 +315,64 @@ export default function ProductDetail() {
               : 'Sepete Ekle'}
           </button>
         </div>
+      </div>
+
+      {/* Yorum bölümü */}
+      <div className="mt-10 border-t border-gray-200 pt-8">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Değerlendirmeler</h2>
+
+        {/* Yorum formu */}
+        {isLoggedIn && (
+          <form onSubmit={handleSubmitReview} className="border border-purple-200 bg-purple-50 rounded-xl p-5 mb-6">
+            <p className="text-sm font-medium text-gray-700 mb-3">Değerlendirme Yap</p>
+            <div className="flex gap-2 mb-3">
+              {[1,2,3,4,5].map(star => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setReviewForm(f => ({ ...f, rating: star }))}
+                  className={`text-2xl transition-colors ${star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                >★</button>
+              ))}
+              <span className="text-sm text-gray-500 ml-2 self-center">{reviewForm.rating}/5</span>
+            </div>
+            <textarea
+              placeholder="Yorumunuzu yazın (isteğe bağlı)"
+              value={reviewForm.comment}
+              onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
+              rows={3}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none mb-3"
+            />
+            {reviewError && <p className="text-red-500 text-sm mb-2">{reviewError}</p>}
+            <button
+              type="submit"
+              disabled={submittingReview}
+              className="bg-purple-600 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+            >
+              {submittingReview ? 'Gönderiliyor...' : 'Gönder'}
+            </button>
+          </form>
+        )}
+
+        {/* Yorum listesi */}
+        {reviews.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-8">Henüz yorum yok. İlk yorumu sen yap!</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {reviews.map(r => (
+              <div key={r.id} className="border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">{r.user_name}</span>
+                    <span className="text-yellow-400 text-sm">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                  </div>
+                  <span className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString('tr-TR')}</span>
+                </div>
+                {r.comment && <p className="text-sm text-gray-600">{r.comment}</p>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
