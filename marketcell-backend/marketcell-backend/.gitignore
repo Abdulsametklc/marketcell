@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+.idea/
+.vscode/
+*.log
+error_page.html
+pdf_text.txt
+Case5_MarketCell.pdf
